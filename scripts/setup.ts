@@ -2,6 +2,8 @@ const deployments = require('../addresses.json')
 
 const hre = require('hardhat')
 
+const randomHexBytes = (n = 32): string => hre.ethers.utils.hexlify(hre.ethers.utils.randomBytes(n))
+
 async function main() {
   const accounts = await hre.ethers.getSigners()
   const ServiceRegistry = await hre.ethers.getContractAt(
@@ -18,42 +20,78 @@ async function main() {
     'EpochManager',
     deployments['1337'].EpochManager.address,
   )
+  const RewardsManager = await hre.ethers.getContractAt(
+    'RewardsManager',
+    deployments['1337'].RewardsManager.address,
+  )
+  const Curation = await hre.ethers.getContractAt('Curation', deployments['1337'].Curation.address)
 
   // unpause protocol
   await Controller.setPaused(false)
 
-  // register as indexer
-  await ServiceRegistry.register('http://test.com', 'ajdhg7')
-  await GRT.approve(deployments['1337'].Staking.address, hre.ethers.utils.parseEther('100000'))
-  await Staking.stake(hre.ethers.utils.parseEther('100000'))
-
+  const indexer = accounts[0]
   const delegator = accounts[1]
-  await GRT.mint(delegator.address, hre.ethers.utils.parseEther('10000'))
+
+  // register as indexer
+  const allocationTokens = hre.ethers.utils.parseEther('100000')
+  await ServiceRegistry.register('http://test.com', 'ajdhg7')
+  await GRT.approve(deployments['1337'].Staking.address, allocationTokens)
+  await Staking.stake(allocationTokens)
+
+  // Allocate to subgraph
+  const w = hre.ethers.Wallet.createRandom()
+  const channelKey = {
+    privKey: w.privateKey,
+    pubKey: w.publicKey,
+    address: w.address,
+    wallet: w,
+    generateProof: (indexerAddress: string): Promise<string> => {
+      const messageHash = hre.ethers.utils.solidityKeccak256(
+        ['address', 'address'],
+        [indexerAddress, w.address],
+      )
+      const messageHashBytes = hre.ethers.utils.arrayify(messageHash)
+      return w.signMessage(messageHashBytes)
+    },
+  }
+  const allocationID = channelKey.address
+  const subgraphDeploymentID1 = randomHexBytes()
+  await Staking.allocate(
+    subgraphDeploymentID1,
+    allocationTokens,
+    allocationID,
+    hre.ethers.constants.HashZero,
+    await channelKey.generateProof(indexer.address),
+  )
+  await GRT.approve(deployments['1337'].Curation.address, hre.ethers.utils.parseEther('10000'))
+  await Curation.mint(subgraphDeploymentID1, hre.ethers.utils.parseEther('1000'), 0)
 
   // Delegate to indexer
+  await GRT.mint(delegator.address, hre.ethers.utils.parseEther('10000'))
+
   await GRT.connect(delegator).approve(
     deployments['1337'].Staking.address,
     hre.ethers.utils.parseEther('10000'),
   )
-  await Staking.connect(delegator).delegate(
-    accounts[0].address,
-    hre.ethers.utils.parseEther('1000'),
-  )
+  await Staking.connect(delegator).delegate(indexer.address, hre.ethers.utils.parseEther('1000'))
 
-  console.log(await Staking.getDelegation(accounts[0].address, delegator.address))
+  console.log(await Staking.getDelegation(indexer.address, delegator.address))
+  console.log(await RewardsManager.getRewards(allocationID))
+  console.log(await Staking.getIndexerStakedTokens(indexer.address))
 
   // Progress Epochs
-  // await EpochManager.setEpochLength(1)
-  console.log(await EpochManager.currentEpoch())
-  console.log(await EpochManager.blockNum())
-  for (let i = 0; i < 10; i++) {
+  await EpochManager.setEpochLength(1)
+  for (let i = 0; i < 100; i++) {
     await EpochManager.runEpoch()
   }
-  console.log(await EpochManager.currentEpoch())
-  console.log(await EpochManager.blockNum())
+
+  // Close allocation
+  await Staking.closeAllocation(allocationID, randomHexBytes())
 
   // Check rewards
-  console.log(await Staking.getDelegation(accounts[0].address, delegator.address))
+  console.log(await Staking.getDelegation(indexer.address, delegator.address))
+  console.log(await RewardsManager.getRewards(allocationID))
+  console.log(await Staking.getIndexerStakedTokens(indexer.address))
 }
 
 main()
