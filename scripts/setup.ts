@@ -75,23 +75,22 @@ async function main() {
   )
   await Staking.connect(delegator).delegate(indexer.address, hre.ethers.utils.parseEther('1000'))
 
-  console.log(await Staking.getDelegation(indexer.address, delegator.address))
-  console.log(await RewardsManager.getRewards(allocationID))
-  console.log(await Staking.getIndexerStakedTokens(indexer.address))
-
   // Progress Epochs
   await EpochManager.setEpochLength(1)
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < 10; i++) {
     await EpochManager.runEpoch()
   }
 
   // Close allocation
   await Staking.closeAllocation(allocationID, randomHexBytes())
 
-  // Check rewards
-  console.log(await Staking.getDelegation(indexer.address, delegator.address))
-  console.log(await RewardsManager.getRewards(allocationID))
-  console.log(await Staking.getIndexerStakedTokens(indexer.address))
+  // Calculate rewards
+  const del = await Staking.getDelegation(indexer.address, delegator.address)
+  const delShares = del.shares
+  const delPool = await Staking.delegationPools(indexer.address)
+  const stake = delShares.mul(delPool.tokens).div(delPool.shares)
+  const rewards = stake.sub(hre.ethers.utils.parseEther('10000'))
+  console.log('Rewards: ', rewards)
 }
 
 main()
