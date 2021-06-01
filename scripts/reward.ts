@@ -1,12 +1,17 @@
 const deployments = require('../addresses.json')
+import fs from 'fs'
 import { BigNumber } from 'ethers'
 const hre = require('hardhat')
+
+const varFile = 'scripts/vars.json'
 
 const randomHexBytes = (n = 32): string => hre.ethers.utils.hexlify(hre.ethers.utils.randomBytes(n))
 export const toBN = (value: string | number): BigNumber => BigNumber.from(value)
 
 async function main() {
   const accounts = await hre.ethers.getSigners()
+  const GRT = await hre.ethers.getContractAt('GraphToken', deployments['31337'].GraphToken.address)
+  const Curation = await hre.ethers.getContractAt('Curation', deployments['31337'].Curation.address)
   const Staking = await hre.ethers.getContractAt('Staking', deployments['31337'].Staking.address)
   const EpochManager = await hre.ethers.getContractAt(
     'EpochManager',
@@ -14,19 +19,18 @@ async function main() {
   )
 
   const indexer = accounts[0]
+  const allocationTokens = hre.ethers.utils.parseEther('100000')
 
-  const delegationAmount = hre.ethers.utils.parseEther('100000')
-
-  // Set appropriately
-  const tenderizerAddress = '0xCD8a1C3ba11CF5ECfa6267617243239504a98d90'
-  const allocationID = '0x7aBC8D6D9B3c91ad2ab6608fA8CBE3511017F3A3'
+  // Get previous allocation details
+  let content = JSON.parse(fs.readFileSync(varFile, 'utf8'))
+  const tenderizerAddress = content.tenderizerAddress
+  let allocationID = content.allocationId
 
   console.log('Delegation:', await Staking.getDelegation(indexer.address, tenderizerAddress))
   console.log('Pool:', await Staking.delegationPools(indexer.address))
 
   // Progress Epochs
-  await EpochManager.setEpochLength(1)
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < 20; i++) {
     await hre.ethers.provider.send('evm_mine')
     await EpochManager.runEpoch()
   }
@@ -36,13 +40,41 @@ async function main() {
   console.log('Delegation:', await Staking.getDelegation(indexer.address, tenderizerAddress))
   console.log('Pool:', await Staking.delegationPools(indexer.address))
 
-  // Calculate rewards
-  const del = await Staking.getDelegation(indexer.address, tenderizerAddress)
-  const delShares = del.shares
-  const delPool = await Staking.delegationPools(indexer.address)
-  const stake = delShares.mul(delPool.tokens).div(delPool.shares)
-  const rewards = stake.sub(delegationAmount)
-  console.log('Rewards: ', rewards)
+  // Start new allocation
+  const w = hre.ethers.Wallet.createRandom()
+  const channelKey = {
+    privKey: w.privateKey,
+    pubKey: w.publicKey,
+    address: w.address,
+    wallet: w,
+    generateProof: (indexerAddress: string): Promise<string> => {
+      const messageHash = hre.ethers.utils.solidityKeccak256(
+        ['address', 'address'],
+        [indexerAddress, w.address],
+      )
+      const messageHashBytes = hre.ethers.utils.arrayify(messageHash)
+      return w.signMessage(messageHashBytes)
+    },
+  }
+  allocationID = channelKey.address
+
+  const subgraphDeploymentID1 = randomHexBytes()
+  await Staking.allocate(
+    subgraphDeploymentID1,
+    allocationTokens,
+    allocationID,
+    hre.ethers.constants.HashZero,
+    await channelKey.generateProof(indexer.address),
+  )
+
+  await Staking.setDelegationParameters(toBN('823000'), toBN('80000'), 5)
+  await GRT.approve(deployments['31337'].Curation.address, hre.ethers.utils.parseEther('1000000'))
+  await Curation.mint(subgraphDeploymentID1, hre.ethers.utils.parseEther('1000000'), 0)
+
+  // Write allocation ID to file
+  content = JSON.parse(fs.readFileSync(varFile, 'utf8'))
+  content.allocationId = allocationID
+  fs.writeFileSync(varFile, JSON.stringify(content))
 }
 
 main()
