@@ -1,6 +1,9 @@
 const deployments = require('../addresses.json')
+import fs from 'fs'
 import { BigNumber } from 'ethers'
 const hre = require('hardhat')
+
+const varFile = 'scripts/vars.json'
 
 const randomHexBytes = (n = 32): string => hre.ethers.utils.hexlify(hre.ethers.utils.randomBytes(n))
 export const toBN = (value: string | number): BigNumber => BigNumber.from(value)
@@ -29,6 +32,7 @@ async function main() {
 
   // unpause protocol
   await Controller.setPaused(false)
+  await EpochManager.setEpochLength(1)
 
   const indexer = accounts[0]
   const delegator = accounts[1]
@@ -56,6 +60,12 @@ async function main() {
     },
   }
   const allocationID = channelKey.address
+
+  // Write allocation ID to file
+  const content = JSON.parse(fs.readFileSync(varFile, 'utf8'))
+  content.allocationId = allocationID
+  fs.writeFileSync(varFile, JSON.stringify(content))
+
   const subgraphDeploymentID1 = randomHexBytes()
   await Staking.allocate(
     subgraphDeploymentID1,
