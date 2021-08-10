@@ -21,25 +21,24 @@ async function main() {
 
   const indexer = accounts[0]
   const allocationTokens = hre.ethers.utils.parseEther('100000')
-
   // Get previous allocation details
   let content = JSON.parse(fs.readFileSync(varFile, 'utf8'))
-  const tenderizerAddress = content.tenderizerAddress
+  // const tenderizerAddress = content.tenderizerAddress
   let allocationID = content.allocationId
 
-  console.log('Delegation:', await Staking.getDelegation(indexer.address, tenderizerAddress))
-  console.log('Pool:', await Staking.delegationPools(indexer.address))
+  // console.log('Delegation:', await Staking.getDelegation(indexer.address, tenderizerAddress))
+  // console.log('Pool:', await Staking.delegationPools(indexer.address))
 
   // Progress Epochs
-  for (let i = 0; i < 10; i++) {
-    await hre.ethers.provider.send('evm_mine')
-    await EpochManager.runEpoch()
-  }
+  // for (let i = 0; i < 10; i++) {
+  //   await hre.ethers.provider.send('evm_mine')
+  //   await EpochManager.runEpoch()
+  // }
 
   // Close allocation
-  await Staking.closeAllocation(allocationID, randomHexBytes())
-  console.log('Delegation:', await Staking.getDelegation(indexer.address, tenderizerAddress))
-  console.log('Pool:', await Staking.delegationPools(indexer.address))
+  // await Staking.closeAllocation(allocationID, '0xf009ab45d18c0d62baff8439cc52ee98036ebdffdc29d5bc9a069c188b41f266')
+  // console.log('Delegation:', await Staking.getDelegation(indexer.address, tenderizerAddress))
+  // console.log('Pool:', await Staking.delegationPools(indexer.address))
 
   // Start new allocation
   const w = hre.ethers.Wallet.createRandom()
@@ -60,16 +59,20 @@ async function main() {
   allocationID = channelKey.address
 
   const subgraphDeploymentID1 = randomHexBytes()
-  await Staking.allocate(
+  const poi = await channelKey.generateProof(indexer.address)
+  console.log(hre.ethers.utils.solidityKeccak256(["bytes"], [poi]))
+  let tx = await Staking.allocate(
     subgraphDeploymentID1,
     allocationTokens,
     allocationID,
     hre.ethers.constants.HashZero,
-    await channelKey.generateProof(indexer.address),
+    poi,
   )
+  await tx.wait()
 
   await Staking.setDelegationParameters(toBN('823000'), toBN('80000'), 5)
-  await GRT.approve(deployments[chainID].Curation.address, hre.ethers.utils.parseEther('1000000'))
+  tx = await GRT.approve(deployments[chainID].Curation.address, hre.ethers.utils.parseEther('1000000'))
+  await tx.wait()
   await Curation.mint(subgraphDeploymentID1, hre.ethers.utils.parseEther('1000000'), 0)
 
   // Write allocation ID to file
