@@ -7,7 +7,7 @@ const varFile = 'scripts/vars.json'
 
 const randomHexBytes = (n = 32): string => hre.ethers.utils.hexlify(hre.ethers.utils.randomBytes(n))
 export const toBN = (value: string | number): BigNumber => BigNumber.from(value)
-const chainID = '31337'
+const chainID = process.env.CHAINID
 
 async function main() {
   const accounts = await hre.ethers.getSigners()
