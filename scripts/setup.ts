@@ -1,6 +1,7 @@
 const deployments = require('../addresses.json')
 import fs from 'fs'
 import { BigNumber } from 'ethers'
+import { keccak256 } from 'ethers/lib/utils'
 const hre = require('hardhat')
 
 const varFile = 'scripts/vars.json'
@@ -33,15 +34,20 @@ async function main() {
 
   // unpause protocol
   await Controller.setPaused(false)
-  await EpochManager.setEpochLength(1)
+  // await EpochManager.setEpochLength(1)
+  
+    const indexer = accounts[0]
+    const delegator = accounts[1]
 
-  const indexer = accounts[0]
-  const delegator = accounts[1]
+
+  const bal = await GRT.allowance(indexer.address, deployments[chainID].Curation.address)
+  console.log(bal.toString())
 
   // register as indexer
   const allocationTokens = hre.ethers.utils.parseEther('100000')
   await ServiceRegistry.register('http://test.com', 'ajdhg7')
-  await GRT.approve(deployments[chainID].Staking.address, allocationTokens)
+  let tx = await GRT.approve(deployments[chainID].Staking.address, allocationTokens)
+  await tx.wait()
   await Staking.stake(allocationTokens)
 
   // Allocate to subgraph
@@ -68,17 +74,21 @@ async function main() {
   fs.writeFileSync(varFile, JSON.stringify(content))
 
   const subgraphDeploymentID1 = randomHexBytes()
+  const poi = await channelKey.generateProof(indexer.address)
+  console.log(hre.ethers.utils.solidityKeccak256(["bytes"], [poi]))
   await Staking.allocate(
     subgraphDeploymentID1,
     allocationTokens,
     allocationID,
     hre.ethers.constants.HashZero,
-    await channelKey.generateProof(indexer.address),
+    poi,
   )
 
   await Staking.setDelegationParameters(toBN('823000'), toBN('80000'), 5)
 
-  await GRT.approve(deployments[chainID].Curation.address, hre.ethers.utils.parseEther('1000000'))
+  tx = await GRT.approve(deployments[chainID].Curation.address, hre.ethers.utils.parseEther('10000000'))
+  tx.wait()
+  console.log(chainID)
   await Curation.mint(subgraphDeploymentID1, hre.ethers.utils.parseEther('1000000'), 0)
 
   // Delegate to indexer
