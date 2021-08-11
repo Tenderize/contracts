@@ -34,7 +34,7 @@ async function main() {
 
   // unpause protocol
   await Controller.setPaused(false)
-  // await EpochManager.setEpochLength(1)
+  await EpochManager.setEpochLength(1)
 
   const indexer = accounts[0]
   const delegator = accounts[1]
@@ -67,7 +67,6 @@ async function main() {
 
   const subgraphDeploymentID1 = randomHexBytes()
   const poi = await channelKey.generateProof(indexer.address)
-  console.log(hre.ethers.utils.solidityKeccak256(['bytes'], [poi]))
   tx = await Staking.allocate(
     subgraphDeploymentID1,
     allocationTokens,
