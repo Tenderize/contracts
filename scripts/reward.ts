@@ -24,9 +24,9 @@ async function main() {
   // Get previous allocation details
   let content = JSON.parse(fs.readFileSync(varFile, 'utf8'))
   // const tenderizerAddress = content.tenderizerAddress
-  let oldAllocationID = content.allocationId
+  const oldAllocationID = content.allocationId
   let poi = content.poi
-  let poiHash = hre.ethers.utils.solidityKeccak256(['bytes'], [poi])
+  const poiHash = hre.ethers.utils.solidityKeccak256(['bytes'], [poi])
 
   // Start new allocation
   const w = hre.ethers.Wallet.createRandom()
@@ -44,7 +44,7 @@ async function main() {
       return w.signMessage(messageHashBytes)
     },
   }
-  let allocationID = channelKey.address
+  const allocationID = channelKey.address
 
   const subgraphDeploymentID1 = randomHexBytes()
   poi = await channelKey.generateProof(indexer.address)
