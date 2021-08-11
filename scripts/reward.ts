@@ -29,10 +29,10 @@ async function main() {
   const poiHash = hre.ethers.utils.solidityKeccak256(['bytes'], [poi])
 
     // Progress Epochs
-    for (let i = 0; i < 10; i++) {
-      await hre.ethers.provider.send('evm_mine')
-      await EpochManager.runEpoch()
-    }
+    // for (let i = 0; i < 10; i++) {
+    //   await hre.ethers.provider.send('evm_mine')
+    //   await EpochManager.runEpoch()
+    // }
 
   // Start new allocation
   const w = hre.ethers.Wallet.createRandom()
@@ -69,19 +69,20 @@ async function main() {
 
   console.log("Close and allocate status: ", receipt.status)
 
+  // Write allocation ID to file
+  content = JSON.parse(fs.readFileSync(varFile, 'utf8'))
+  content.allocationId = allocationID
+  content.poi = poi
+  fs.writeFileSync(varFile, JSON.stringify(content))
+
   // await Staking.setDelegationParameters(toBN('823000'), toBN('80000'), 5)
   tx = await GRT.approve(
     deployments[chainID].Curation.address,
     hre.ethers.utils.parseEther('1000000'),
   )
   await tx.wait()
-  await Curation.mint(subgraphDeploymentID1, hre.ethers.utils.parseEther('1000000'), 0)
-
-  // Write allocation ID to file
-  content = JSON.parse(fs.readFileSync(varFile, 'utf8'))
-  content.allocationId = allocationID
-  content.poi = poi
-  fs.writeFileSync(varFile, JSON.stringify(content))
+  tx = await Curation.mint(subgraphDeploymentID1, hre.ethers.utils.parseEther('1000000'), 0)
+  await tx.wait()
 }
 
 main()
