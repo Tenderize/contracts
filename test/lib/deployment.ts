@@ -201,7 +201,10 @@ export async function deployGNS(
 }
 
 export async function deployEthereumDIDRegistry(deployer: Signer): Promise<EthereumDIDRegistry> {
-  return deployContract('EthereumDIDRegistry', deployer) as unknown as Promise<EthereumDIDRegistry>
+  return (deployContract(
+    'EthereumDIDRegistry',
+    deployer,
+  ) as unknown) as Promise<EthereumDIDRegistry>
 }
 
 export async function deployServiceRegistry(
