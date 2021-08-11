@@ -18,7 +18,7 @@ async function main() {
     'EpochManager',
     deployments[chainID].EpochManager.address,
   )
-
+  let tx
   const indexer = accounts[0]
   const allocationTokens = hre.ethers.utils.parseEther('100000')
   // Get previous allocation details
@@ -28,11 +28,11 @@ async function main() {
   let poi = content.poi
   const poiHash = hre.ethers.utils.solidityKeccak256(['bytes'], [poi])
 
-    // Progress Epochs
-    // for (let i = 0; i < 10; i++) {
-    //   await hre.ethers.provider.send('evm_mine')
-    //   await EpochManager.runEpoch()
-    // }
+  // Progress Epochs
+  // for (let i = 0; i < 10; i++) {
+  //   await hre.ethers.provider.send('evm_mine')
+  //   await EpochManager.runEpoch()
+  // }
 
   // Start new allocation
   const w = hre.ethers.Wallet.createRandom()
@@ -55,7 +55,7 @@ async function main() {
   const subgraphDeploymentID1 = randomHexBytes()
   poi = await channelKey.generateProof(indexer.address)
 
-  let tx = await Staking.closeAndAllocate(
+  tx = await Staking.closeAndAllocate(
     oldAllocationID,
     poiHash,
     indexer.address,
@@ -64,10 +64,11 @@ async function main() {
     allocationID,
     hre.ethers.constants.HashZero,
     poi,
+    { gasLimit: 1000000 },
   )
   const receipt = await tx.wait()
 
-  console.log("Close and allocate status: ", receipt.status)
+  console.log('Close and allocate status: ', receipt.status)
 
   // Write allocation ID to file
   content = JSON.parse(fs.readFileSync(varFile, 'utf8'))
@@ -76,13 +77,13 @@ async function main() {
   fs.writeFileSync(varFile, JSON.stringify(content))
 
   // await Staking.setDelegationParameters(toBN('823000'), toBN('80000'), 5)
-  tx = await GRT.approve(
-    deployments[chainID].Curation.address,
-    hre.ethers.utils.parseEther('1000000'),
-  )
-  await tx.wait()
-  tx = await Curation.mint(subgraphDeploymentID1, hre.ethers.utils.parseEther('1000000'), 0)
-  await tx.wait()
+  // tx = await GRT.approve(
+  //   deployments[chainID].Curation.address,
+  //   hre.ethers.utils.parseEther('1000000'),
+  // )
+  // await tx.wait()
+  // tx = await Curation.mint(subgraphDeploymentID1, hre.ethers.utils.parseEther('1000000'), 0)
+  // await tx.wait()
 }
 
 main()
