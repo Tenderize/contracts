@@ -55,6 +55,7 @@ async function main() {
     indexer.address,
     subgraphDeploymentID1,
     allocationTokens,
+    allocationID,
     hre.ethers.constants.HashZero,
     poi,
   )
