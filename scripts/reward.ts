@@ -28,6 +28,12 @@ async function main() {
   let poi = content.poi
   const poiHash = hre.ethers.utils.solidityKeccak256(['bytes'], [poi])
 
+    // Progress Epochs
+    for (let i = 0; i < 10; i++) {
+      await hre.ethers.provider.send('evm_mine')
+      await EpochManager.runEpoch()
+    }
+
   // Start new allocation
   const w = hre.ethers.Wallet.createRandom()
   const channelKey = {
@@ -59,7 +65,9 @@ async function main() {
     hre.ethers.constants.HashZero,
     poi,
   )
-  await tx.wait()
+  const receipt = await tx.wait()
+
+  console.log("Close and allocate status: ", receipt.status)
 
   // await Staking.setDelegationParameters(toBN('823000'), toBN('80000'), 5)
   tx = await GRT.approve(

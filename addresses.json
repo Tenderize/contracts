@@ -1,4 +1,12 @@
 {
+  "1": {
+    "IENS": {
+      "address": "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e"
+    },
+    "IEthereumDIDRegistry": {
+      "address": "0xdCa7EF03e98e0DC2B855bE647C39ABe984fcF21B"
+    }
+  },
   "4": {
     "GraphProxyAdmin": {
       "address": "0xD883eCd6645CaFf5C446c72847D7D9d838571fd2",
