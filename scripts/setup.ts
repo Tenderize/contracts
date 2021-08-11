@@ -35,10 +35,9 @@ async function main() {
   // unpause protocol
   await Controller.setPaused(false)
   // await EpochManager.setEpochLength(1)
-  
-    const indexer = accounts[0]
-    const delegator = accounts[1]
 
+  const indexer = accounts[0]
+  const delegator = accounts[1]
 
   const bal = await GRT.allowance(indexer.address, deployments[chainID].Curation.address)
   console.log(bal.toString())
@@ -68,14 +67,9 @@ async function main() {
   }
   const allocationID = channelKey.address
 
-  // Write allocation ID to file
-  const content = JSON.parse(fs.readFileSync(varFile, 'utf8'))
-  content.allocationId = allocationID
-  fs.writeFileSync(varFile, JSON.stringify(content))
-
   const subgraphDeploymentID1 = randomHexBytes()
   const poi = await channelKey.generateProof(indexer.address)
-  console.log(hre.ethers.utils.solidityKeccak256(["bytes"], [poi]))
+  console.log(hre.ethers.utils.solidityKeccak256(['bytes'], [poi]))
   await Staking.allocate(
     subgraphDeploymentID1,
     allocationTokens,
@@ -84,9 +78,18 @@ async function main() {
     poi,
   )
 
+  // Write allocation ID to file
+  const content = JSON.parse(fs.readFileSync(varFile, 'utf8'))
+  content.allocationId = allocationID
+  content.poi = poi
+  fs.writeFileSync(varFile, JSON.stringify(content))
+
   await Staking.setDelegationParameters(toBN('823000'), toBN('80000'), 5)
 
-  tx = await GRT.approve(deployments[chainID].Curation.address, hre.ethers.utils.parseEther('10000000'))
+  tx = await GRT.approve(
+    deployments[chainID].Curation.address,
+    hre.ethers.utils.parseEther('10000000'),
+  )
   tx.wait()
   console.log(chainID)
   await Curation.mint(subgraphDeploymentID1, hre.ethers.utils.parseEther('1000000'), 0)
