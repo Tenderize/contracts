@@ -76,9 +76,9 @@ function setupNetworkProviders(hardhatConfig) {
       url: netConfig.url ? netConfig.url : getDefaultProviderURL(netConfig.network),
       gas: netConfig.gas || 'auto',
       gasPrice: netConfig.gasPrice || 'auto',
-      accounts: {
-        mnemonic: getAccountMnemonic(),
-      },
+      accounts:
+        // mnemonic: getAccountMnemonic(),
+        [`0x${process.env.PRIVATE_KEY}`],
     }
   }
 }
@@ -137,6 +137,7 @@ const config: HardhatUserConfig = {
     },
   },
   etherscan: {
+    url: 'https://rinkeby.etherscan.io/api',
     apiKey: process.env.ETHERSCAN_API_KEY,
   },
   gasReporter: {
