@@ -3,7 +3,7 @@ import fs from 'fs'
 import { BigNumber } from 'ethers'
 const hre = require('hardhat')
 
-const varFile = 'scripts/vars.json'
+const varFile = '/root/Graph/contracts/scripts/vars.json'
 
 const randomHexBytes = (n = 32): string => hre.ethers.utils.hexlify(hre.ethers.utils.randomBytes(n))
 export const toBN = (value: string | number): BigNumber => BigNumber.from(value)
@@ -26,6 +26,7 @@ async function main() {
   // const tenderizerAddress = content.tenderizerAddress
   const oldAllocationID = content.allocationId
   let poi = content.poi
+  const oldDeploymentID = content.deploymentID
   const poiHash = hre.ethers.utils.solidityKeccak256(['bytes'], [poi])
 
   // Progress Epochs
@@ -33,6 +34,18 @@ async function main() {
   //   await hre.ethers.provider.send('evm_mine')
   //   await EpochManager.runEpoch()
   // }
+
+  tx = await GRT.approve(
+    deployments[chainID].Curation.address,
+    hre.ethers.utils.parseEther('1000000'),
+  )
+  await tx.wait()
+  tx = await Curation.mint(oldDeploymentID, hre.ethers.utils.parseEther('1000000'), 0)
+  try {
+   await tx.wait()
+  } catch (e) {
+
+  }
 
   // Start new allocation
   const w = hre.ethers.Wallet.createRandom()
@@ -74,16 +87,10 @@ async function main() {
   content = JSON.parse(fs.readFileSync(varFile, 'utf8'))
   content.allocationId = allocationID
   content.poi = poi
+  content.deploymentID = subgraphDeploymentID1 
   fs.writeFileSync(varFile, JSON.stringify(content))
-
-  // await Staking.setDelegationParameters(toBN('823000'), toBN('80000'), 5)
-  // tx = await GRT.approve(
-  //   deployments[chainID].Curation.address,
-  //   hre.ethers.utils.parseEther('1000000'),
-  // )
-  // await tx.wait()
-  // tx = await Curation.mint(subgraphDeploymentID1, hre.ethers.utils.parseEther('1000000'), 0)
-  // await tx.wait()
+	
+  //await delay(200000);
 }
 
 main()
@@ -92,3 +99,7 @@ main()
     console.error(error)
     process.exit(1)
   })
+
+function delay(ms: number) {
+    return new Promise( resolve => setTimeout(resolve, ms) );
+}
