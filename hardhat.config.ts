@@ -137,7 +137,7 @@ const config: HardhatUserConfig = {
     },
   },
   etherscan: {
-    url: 'https://rinkeby.etherscan.io/api',
+//    url: 'https://rinkeby.etherscan.io/api',
     apiKey: process.env.ETHERSCAN_API_KEY,
   },
   gasReporter: {
