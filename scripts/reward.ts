@@ -20,7 +20,7 @@ async function main() {
   )
   let tx
   const indexer = accounts[0]
-  const allocationTokens = hre.ethers.utils.parseEther('100000')
+  const allocationTokens = hre.ethers.utils.parseEther('100')
   // Get previous allocation details
   let content = JSON.parse(fs.readFileSync(varFile, 'utf8'))
   // const tenderizerAddress = content.tenderizerAddress
@@ -30,17 +30,17 @@ async function main() {
   const poiHash = hre.ethers.utils.solidityKeccak256(['bytes'], [poi])
 
   // Progress Epochs
-  // for (let i = 0; i < 10; i++) {
-  //   await hre.ethers.provider.send('evm_mine')
-  //   await EpochManager.runEpoch()
+  // for (let i = 0; i < 50; i++) {
+    // await hre.ethers.provider.send('evm_mine')
+     //await EpochManager.runEpoch()
   // }
 
   tx = await GRT.approve(
     deployments[chainID].Curation.address,
-    hre.ethers.utils.parseEther('1000000'),
+    hre.ethers.utils.parseEther('100'),
   )
   await tx.wait()
-  tx = await Curation.mint(oldDeploymentID, hre.ethers.utils.parseEther('1000000'), 0)
+  tx = await Curation.mint(oldDeploymentID, hre.ethers.utils.parseEther('100'), 0, { gasLimit: 1000000 })
   try {
    await tx.wait()
   } catch (e) {
