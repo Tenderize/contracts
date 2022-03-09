@@ -20,7 +20,7 @@ async function main() {
   )
   let tx
   const indexer = accounts[0]
-  const allocationTokens = hre.ethers.utils.parseEther('100')
+  const allocationTokens = hre.ethers.utils.parseEther('10000000')
   // Get previous allocation details
   let content = JSON.parse(fs.readFileSync(varFile, 'utf8'))
   // const tenderizerAddress = content.tenderizerAddress
@@ -34,18 +34,20 @@ async function main() {
     // await hre.ethers.provider.send('evm_mine')
      //await EpochManager.runEpoch()
   // }
-
+  const mintMultiplier = 100
+//  for (let i = 0; i < 3; i++) {
   tx = await GRT.approve(
     deployments[chainID].Curation.address,
-    hre.ethers.utils.parseEther('100'),
+    allocationTokens.mul(mintMultiplier),
   )
   await tx.wait()
-  tx = await Curation.mint(oldDeploymentID, hre.ethers.utils.parseEther('100'), 0, { gasLimit: 1000000 })
+  tx = await Curation.mint(oldDeploymentID, allocationTokens.mul(mintMultiplier), 0, { gasLimit: 1000000 })
   try {
    await tx.wait()
   } catch (e) {
 
   }
+//}
 
   // Start new allocation
   const w = hre.ethers.Wallet.createRandom()
